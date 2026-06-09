@@ -1,0 +1,5 @@
+venv/
+__pycache__/
+.env
+cafe.db
+.DS_Store
