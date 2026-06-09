@@ -1,4 +1,4 @@
-# Cafe-Manger
+# Cafe-Manager
 A web application for cafe inventory tracking, sales management, analytics and AI-assisted business insights
 A modern web application for cafe owners to:
 
