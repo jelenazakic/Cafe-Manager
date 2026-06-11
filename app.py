@@ -10,8 +10,8 @@ from datetime import datetime
 # =====================================================
 load_dotenv()
 
-url = os.getenv("SUPABASE_URL")
-key = os.getenv("SUPABASE_KEY")
+url = os.getenv("SUPABASE_URL") or st.secrets.get("SUPABASE_URL")
+key = os.getenv("SUPABASE_KEY") or st.secrets.get("SUPABASE_KEY")
 
 if not url or not key:
     st.error("SUPABASE_URL ili SUPABASE_KEY nisu pronađeni u .env fajlu.")
