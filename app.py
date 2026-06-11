@@ -10,14 +10,14 @@ from datetime import datetime
 # =====================================================
 load_dotenv()
 
-url = os.getenv("SUPABASE_URL") or st.secrets.get("SUPABASE_URL")
-key = os.getenv("SUPABASE_KEY") or st.secrets.get("SUPABASE_KEY")
+supabase_url = os.getenv("SUPABASE_URL") or st.secrets.get("SUPABASE_URL")
+supabase_key = os.getenv("SUPABASE_KEY") or st.secrets.get("SUPABASE_KEY")
 
-if not url or not key:
+if not supabase_url or not supabase_key:
     st.error("SUPABASE_URL ili SUPABASE_KEY nisu pronađeni u .env fajlu.")
     st.stop()
 
-supabase: Client = create_client(url, key)
+supabase: Client = create_client(supabase_url, supabase_key)
 
 # =====================================================
 # PAGE CONFIG 
@@ -29,169 +29,183 @@ st.set_page_config(
 )
 
 # =====================================================
-# CSS 
+# LOAD EXTERNAL CSS FILE
 # =====================================================
-st.markdown("""
-<style>
-.block-container {
-    padding-top: 1rem !important;
-    padding-bottom: 2rem !important;
-    padding-left: 0.5rem !important;
-    padding-right: 0.5rem !important;
-    max-width: 100% !important;
-}
+def load_css(file_name):
+    with open(file_name, "r", encoding="utf-8") as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-h1 {
-    text-align: center !important;
-    font-size: 24px !important;
-    font-weight: 700 !important;
-    width: 100% !important;
-    display: block !important;
-    margin-bottom: 1rem !important;
-}
-
-h3 {
-    font-size: 18px !important;
-    font-weight: 600;
-}
-
-.stNumberInput div div input {
-    font-size: 16px !important; 
-    height: 42px !important;
-}
-
-.stButton > button {
-    width: 100%;
-    border-radius: 12px;
-    height: 52px;
-    font-size: 16px;
-    font-weight: 700;
-    background-color: #2e7d32 !important;
-    color: white !important;
-    border: none;
-    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-    margin-top: 1rem;
-}
-
-.popis-kartica {
-    background-color: #f8f9fa;
-    padding: 10px 15px;
-    border-radius: 8px;
-    margin-bottom: 8px;
-    border-left: 4px solid #2e7d32;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-</style>
-""", unsafe_allow_html=True)
+load_css("assets/style.css")
 
 # =====================================================
-# LISTA ARTIKALA (Tačni nazivi iz tvoje baze)
+# ITEMS LIST (Exact names matching your database)
 # =====================================================
-ARTIKLI_LISTA = [
+ITEMS_LIST = [
     'Espresso', 'Nes kafa', 'Domaća kafa', 'Mleko', 'Čaj', 'Voda', 
     'Sok flašica', 'Next', 'Cockta', 'Orangina', 'Cedevita', 'Red Bull', 
-    'Guarana', 'Vino flašica', 'Točeno pivo', 'Nikšićko pivo', 'Strano pivo', 
+    'Guarana', 'Vino flašica', 'Točeno pivo', 'Nikšićko pivo flašica', 'Strano pivo', 
     'Corona', 'Somersby', 'Smirnoff Ice', 'Domaća loza', 'Kovilj rakija', 
     'Kajsija', 'Viljamovka', 'Šljiva', 'Johnnie Walker', 'Chivas Regal', 
     'Jack Daniels', 'Tullamore D.E.W.', 'Dunja', 'Campari', 'Martini', 
     'Vodka', 'Tekila', 'Bacardi', 'Gin', 'Baileys', 'Jameson', 'Aperol', 
     'Ballantines', 'Pelinkovac', 'Jägermeister', 'Voda velika', 'Ivi', 'Prosecco'
 ]
+INT_ITEMS = [
+    'Espresso', 'Domaća kafa', 'Mleko', 'Čaj', 'Voda', 'Sok flašica', 
+    'Next', 'Cockta', 'Orangina', 'Cedevita', 'Red Bull', 'Guarana', 
+    'Vino flašica', 'Nikšićko pivo', 'Nikšićko pivo flašica', 'Strano pivo', 
+    'Corona', 'Somersby', 'Smirnoff Ice', 'Voda velika', 'Ivi'
+]
 
 # =====================================================
-# NASLOV 
+# HEADER & NAVIGATION TABS
 # =====================================================
 st.title("🍹 Šank Popis v2.0")
 
-tab_unos, tab_pregled = st.tabs(["📝 Novi Popis", "📊 Pregled"])
+tab_entry, tab_view, tab_edit= st.tabs(["📝 Novi Popis", "📊 Pregled", "✏️ Ispravka"])
 
 # =====================================================
-# TAB 1: POPIS
+# TAB 1: NEW ENTRY (POPIS)
 # =====================================================
-with tab_unos:
+with tab_entry:
     st.subheader("Unesi stanje")
   
-    izabrani_datum = st.date_input("Datum popisa:", datetime.now().date())
+    selected_date = st.date_input("Datum popisa:", datetime.now().date())
     
-    with st.form("velika_popis_forma", clear_on_submit=False):
+    with st.form("main_inventory_form", clear_on_submit=False):
         
-        unesene_kolicine = {}
+        entered_quantities = {}
         
-        for artikal in ARTIKLI_LISTA:
-            pomoćna_lista = ['Domaća loza', 'Kovilj rakija', 'Kajsija', 'Viljamovka', 'Šljiva', 
-                             'Johnnie Walker', 'Chivas Regal', 'Jack Daniels', 'Tullamore D.E.W.', 
-                             'Dunja', 'Campari', 'Martini', 'Vodka', 'Tekila', 'Bacardi', 'Gin', 
-                             'Baileys', 'Jameson', 'Aperol', 'Ballantines', 'Pelinkovac', 'Jägermeister','Prosecco']
-            if artikal in pomoćna_lista:
-                        unesene_kolicine[artikal] = st.number_input(
-                            label=artikal,
-                            min_value=0.0,
-                            value=0.0,
-                            step=0.1,
-                            format="%.1f",
-                            key=f"input_{artikal}"
-                        )
+        for item in ITEMS_LIST:
+            if item in INT_ITEMS:
+                entered_quantities[item] = st.number_input(
+                    label=item, min_value=0, value=0, step=1, key=f"input_{item}"
+                )
             else:
-              unesene_kolicine[artikal] = st.number_input(
-                            label=artikal,
-                            min_value=0,
-                            value=0,
-                            step=1,
-                            key=f"input_{artikal}"
-                        )
+                entered_quantities[item] = st.number_input(
+                    label=item, min_value=0.0, value=0.0, step=0.1, format="%.1f", key=f"input_{item}"
+                )
             
-        sacuvaj_button = st.form_submit_button("💾 SAČUVAJ PODATKE")
+        save_button = st.form_submit_button("💾 SAČUVAJ PODATKE")
         
-        if sacuvaj_button:
-            podaci_za_bazu = []
-            for artikal, kolicina in unesene_kolicine.items():
-                podaci_za_bazu.append({
-                    "ime_artikla": artikal,
-                    "kolicina": kolicina,
-                    "datum_popisa": str(izabrani_datum)
+        if save_button:
+            database_payload = []
+            for item, qty in entered_quantities.items():
+                database_payload.append({
+                    "ime_artikala": item,
+                    "kolicina": qty,
+                    "datum_popisa": str(selected_date)
                 })
                 
             try:
-                supabase.table("stanje_popisa").insert(podaci_za_bazu).execute()
+                supabase.table("stanje_popisa").insert(database_payload).execute()
                 st.success("🎉 Popis je uspešno sačuvan u bazu!")
                 st.balloons()
             except Exception as e:
                 st.error(f"Greška pri čuvanju u bazu: {e}")
 
 # =====================================================
-# TAB 2: PREGLED PODATAKA 
+# TAB 2: VIEW LOGS (PREGLED PODATAKA)
 # =====================================================
-with tab_pregled:
-    st.subheader("Poslednji unosi iz baze")
+with tab_view:
+    st.subheader("Sačuvana stanja na šanku")
     
-    if st.button("🔄 Osveži podatke"):
+    if st.button("🔄 Osveži tabelu", key="refresh_view"):
         st.rerun()
         
     try:
-        odgovor = supabase.table("stanje_popisa").select("*").order("datum_popisa").limit(100).execute()
-        podaci = odgovor.data
+        # Selektujemo tačan naziv kolone: 'ime_artikala'
+        response = supabase.table("stanje_popisa").select("id, ime_artikala, kolicina, datum_popisa").order("datum_popisa").limit(200).execute()
+        records_data = response.data
         
-        if not podaci:
+        if not records_data:
             st.info("Nema unetih popisa u bazi podataka.")
         else:
-            df = pd.DataFrame(podaci)
+            df = pd.DataFrame(records_data)
+
+            df['ime_artikala'] = pd.Categorical(df['ime_artikala'], categories=ITEMS_LIST, ordered=True)
+
+            unique_dates = sorted(df["datum_popisa"].unique(), reverse=True)
+            selected_filter_date = st.selectbox("Filtriraj po datumu:", unique_dates, key="filter_date_view")
             
-            svi_datumi = df["datum_popisa"].unique()
-            izabrani_filter_datum = st.selectbox("Filtriraj po datumu:", svi_datumi)
+            filtered_df = df[df["datum_popisa"] == selected_filter_date]
+
+            filtered_df = filtered_df.sort_values("ime_artikala")
+
+            st.write(f"**Trenutni popis za dan {selected_filter_date}:**")
             
-            filtrirani_df = df[df["datum_popisa"] == izabrani_filter_datum]
-            
-            st.write(f"**Popis za dan {izabrani_filter_datum}:**")
-            
-            for _, red in filtrirani_df.iterrows():
+            for _, row in filtered_df.iterrows():
                 st.markdown(f"""
                 <div class="popis-kartica">
-                    <span style="font-weight:600; color:#333;">{red['ime_artikala']}</span>
-                    <span style="font-weight:700; color:#2e7d32; font-size:16px;">{red['kolicina']}</span>
+                    <span style="font-weight:600; color:#333;">{row['ime_artikala']}</span>
+                    <span style="font-weight:700; color:#2e7d32; font-size:16px;">{float(row['kolicina'])}</span>
                 </div>
                 """, unsafe_allow_html=True)
                 
     except Exception as e:
         st.error(f"Nije moguće učitati podatke: {e}")
+
+
+# =====================================================
+# TAB 3: CORRECTIONS PANEL 
+# =====================================================
+with tab_edit:
+    st.subheader("Izmeni pogrešan unos")
+    
+    try:
+        response = supabase.table("stanje_popisa").select("id, ime_artikala, kolicina, datum_popisa").order("datum_popisa").limit(200).execute()
+        records_data = response.data
+        
+        if not records_data:
+            st.info("Nema podataka dostupnih za izmenu.")
+        else:
+            df = pd.DataFrame(records_data)
+
+            df['ime_artikala'] = pd.Categorical(df['ime_artikala'], categories=ITEMS_LIST, ordered=True)
+            
+            unique_dates = sorted(df["datum_popisa"].unique(), reverse=True)
+            selected_filter_date = st.selectbox("1. Izaberi datum popisa:", unique_dates, key="filter_date_edit")
+            
+            filtered_df = df[df["datum_popisa"] == selected_filter_date]
+            
+            filtered_df = filtered_df.sort_values("ime_artikala")
+            
+            item_options = {f"{row['ime_artikala']} (Trenutno: {row['kolicina']})": row for _, row in filtered_df.iterrows()}
+            
+            if item_options:
+                with st.form("isolated_edit_form", clear_on_submit=False):
+                    selected_item_label = st.selectbox("2. Izaberi artikal za ispravku:", list(item_options.keys()))
+                    target_row = item_options[selected_item_label]
+                    
+                    decimal_step_items = [
+                        'Domaća loza', 'Kovilj rakija', 'Kajsija', 'Viljamovka', 'Šljiva', 
+                        'Johnnie Walker', 'Chivas Regal', 'Jack Daniels', 'Tullamore D.E.W.', 
+                        'Dunja', 'Campari', 'Martini', 'Vodka', 'Tekila', 'Bacardi', 'Gin', 
+                        'Baileys', 'Jameson', 'Aperol', 'Ballantines', 'Pelinkovac', 'Jägermeister', 'Prosecco'
+                    ]
+                    
+                    if target_row['ime_artikala'] in decimal_step_items:
+                        new_qty = st.number_input(
+                            "3. Unesi novu TAČNU količinu:",
+                            min_value=0.0, value=float(target_row['kolicina']), step=0.1, format="%.1f", key="isolated_edit_qty"
+                        )
+                    else:
+                        new_qty = st.number_input(
+                            "3. Unesi novu TAČNU količinu:",
+                            min_value=0, value=int(target_row['kolicina']), step=1, key="isolated_edit_qty"
+                        )
+                    
+                    submit_edit = st.form_submit_button("💾 SAČUVAJ ISPRAVKU")
+                    
+                    if submit_edit:
+                        try:
+                            supabase.table("stanje_popisa").update({"kolicina": new_qty}).eq("id", target_row['id']).execute()
+                            st.success(f"Uspešno izmenjeno! {target_row['ime_artikala']} je sada: {new_qty}")
+                            st.balloons()
+                        except Exception as e:
+                            st.error(f"Greška pri izmeni u bazi: {e}")
+            else:
+                st.warning("Nema unetih artikala za ovaj datum.")
+                
+    except Exception as e:
+        st.error(f"Greška pri učitavanju panela za izmene: {e}")
