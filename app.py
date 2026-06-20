@@ -48,13 +48,13 @@ ITEMS_LIST = [
     'Kajsija', 'Viljamovka', 'Šljiva', 'Johnnie Walker', 'Chivas Regal', 
     'Jack Daniels', 'Tullamore D.E.W.', 'Dunja', 'Campari', 'Martini', 
     'Vodka', 'Tekila', 'Bacardi', 'Gin', 'Baileys', 'Jameson', 'Aperol', 
-    'Ballantines', 'Pelinkovac', 'Jägermeister', 'Voda velika', 'Ivi', 'Prosecco'
+    'Ballantines', 'Pelinkovac', 'Jägermeister', 'Voda velika', 'Ivi', 'Prosecco', 'Triple Sec','Grenadine','Blue Curasao', 'Alter pivo', 'Aspal', 'Koktel Bočica'
 ]
 INT_ITEMS = [
     'Espresso', 'Domaća kafa', 'Mleko', 'Čaj', 'Voda', 'Sok flašica', 
     'Next', 'Cockta', 'Orangina', 'Cedevita', 'Red Bull', 'Guarana', 
     'Vino flašica', 'Nikšićko pivo', 'Nikšićko pivo flašica', 'Strano pivo', 
-    'Corona', 'Somersby', 'Smirnoff Ice', 'Voda velika', 'Ivi'
+    'Corona', 'Somersby', 'Smirnoff Ice', 'Voda velika', 'Ivi', 'Alter pivo', 'Aspal', 'Koktel Bočica'
 ]
 
 # =====================================================
