@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from supabase import create_client, Client
 import os
+import time
 from dotenv import load_dotenv
 from datetime import datetime
 
@@ -206,6 +207,23 @@ with tab_edit:
                             st.error(f"Greška pri izmeni u bazi: {e}")
             else:
                 st.warning("Nema unetih artikala za ovaj datum.")
-                
+
+            st.markdown("---") 
+            st.subheader("🚨 Obriši ceo dan popisa")
+            st.warning(f"Pažnja: Sledeća akcija će trajno obrisati SVE artikle koji su uneti za datum: **{selected_filter_date}**.")
+            
+            potvrda_brisanja = st.checkbox(f"Potvrđujem da želim da obrišem kompletan popis za {selected_filter_date}", key="potvrda_delete_dan")
+            
+            if st.button("🔥 OBRIŠI CEO DAN POPISA", type="primary", disabled=not potvrda_brisanja):
+                try:
+                    supabase.table("stanje_popisa").delete().eq("datum_popisa", selected_filter_date).execute()
+                    
+                    st.success(f"Uspešno obrisan kompletan popis za dan: {selected_filter_date}!")
+                    st.balloons()
+                    time.sleep(2)
+                    st.rerun()
+                    
+                except Exception as e:
+                    st.error(f"Greška pri brisanju dana iz baze: {e}")
     except Exception as e:
         st.error(f"Greška pri učitavanju panela za izmene: {e}")
